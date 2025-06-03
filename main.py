@@ -4,6 +4,7 @@ from scene_manager import SceneManager
 from src.scenes.start_menu import StartMenu
 from src.scenes.settings_scene import SettingsScene
 from src.scenes.level_1 import Level1
+from src.scenes.level_2 import Level2
 from settings import *
 from src.scenes.level_completed import LevelCompleted
 from src.scenes.game_over import GameOver
@@ -28,6 +29,7 @@ def main():
     scene_manager.add('start', StartMenu())
     scene_manager.add('settings', SettingsScene())
     scene_manager.add('level1', Level1())
+    scene_manager.add('level2', Level2())
     scene_manager.add('level_completed', LevelCompleted())
     scene_manager.add('game_over', GameOver())
 
