@@ -13,7 +13,7 @@ class GameOver:
         
         self.font_large = None
         self.font_small = None
-        self.menu_button = None
+        self.menu_button = None  # Пока не инициализированы
         self.retry_button = None
         
         self.alpha = 0
@@ -26,13 +26,40 @@ class GameOver:
         self.message = "ИГРА ОКОНЧЕНА"
         self.message_color = WHITE
         
+        # Инициализируем кнопки перед вызовом update_layout
+        self._init_buttons()
         self.update_layout((WIDTH, HEIGHT))
 
-    def set_message(self, message, color=None):
-        """Установить кастомное сообщение"""
-        self.message = message
-        if color:
-            self.message_color = color
+    def _init_buttons(self):
+        """Инициализация кнопок с базовыми параметрами"""
+        button_width = int(250 * self.scale_factor)
+        button_height = int(60 * self.scale_factor)
+        
+        self.menu_button = Button(
+            "В меню",
+            0, 0,  # Временные координаты
+            button_width,
+            button_height,
+            pygame.font.Font(font_path, int(30 * self.scale_factor)),
+            PURPLE_MID,
+            WHITE,
+            self.scale_factor
+        )
+        self.menu_button.border_color = WHITE
+        self.menu_button.border_width = int(3 * self.scale_factor)
+        
+        self.retry_button = Button(
+            "Еще раз",
+            0, 0,  # Временные координаты
+            button_width,
+            button_height,
+            pygame.font.Font(font_path, int(30 * self.scale_factor)),
+            PURPLE_MID,
+            WHITE,
+            self.scale_factor
+        )
+        self.retry_button.border_color = WHITE
+        self.retry_button.border_width = int(3 * self.scale_factor)
 
     def update_layout(self, window_size):
         self.current_window_size = window_size
@@ -44,34 +71,44 @@ class GameOver:
         self.font_large = pygame.font.Font(font_path, int(72 * self.scale_factor))
         self.font_small = pygame.font.Font(font_path, int(36 * self.scale_factor))
         
-        button_width = int(200 * self.scale_factor)
-        button_height = int(50 * self.scale_factor)
-        button_spacing = int(20 * self.scale_factor)
+        button_width = int(250 * self.scale_factor)
+        button_height = int(60 * self.scale_factor)
         
-        self.menu_button = Button(
-            "В меню",
-            int(width // 2 - button_width // 2),
-            int(height // 2 + 50 * self.scale_y),
-            button_width,
-            button_height,
-            pygame.font.Font(font_path, int(30 * self.scale_factor)),
-            PURPLE_MID,
-            WHITE
-        )
+        # Обновляем только параметры существующих кнопок
+        if self.menu_button:
+            self.menu_button.rect.width = button_width
+            self.menu_button.rect.height = button_height
+            self.menu_button.rect.center = (
+                width // 2,
+                height // 2 + 50 * self.scale_y
+            )
+            self.menu_button.font = pygame.font.Font(font_path, int(30 * self.scale_factor))
+            self.menu_button.rendered_text = self.menu_button.font.render(
+                self.menu_button.text, True, self.menu_button.text_color)
+            self.menu_button.scale_factor = self.scale_factor
+            self.menu_button.border_width = int(3 * self.scale_factor)
         
-        self.retry_button = Button(
-            "Еще раз",
-            int(width // 2 - button_width // 2),
-            int(height // 2 + 120 * self.scale_y),
-            button_width,
-            button_height,
-            pygame.font.Font(font_path, int(30 * self.scale_factor)),
-            PURPLE_MID,
-            WHITE
-        )
+        if self.retry_button:
+            self.retry_button.rect.width = button_width
+            self.retry_button.rect.height = button_height
+            self.retry_button.rect.center = (
+                width // 2,
+                height // 2 + 120 * self.scale_y
+            )
+            self.retry_button.font = pygame.font.Font(font_path, int(30 * self.scale_factor))
+            self.retry_button.rendered_text = self.retry_button.font.render(
+                self.retry_button.text, True, self.retry_button.text_color)
+            self.retry_button.scale_factor = self.scale_factor
+            self.retry_button.border_width = int(3 * self.scale_factor)
         
         self.fullscreen_content = pygame.Surface((width, height))
         self.transition_surface = pygame.Surface((width, height), pygame.SRCALPHA)
+
+    # Остальные методы остаются без изменений
+    def set_message(self, message, color=None):
+        self.message = message
+        if color:
+            self.message_color = color
 
     def handle_event(self, event):
         if event.type == pygame.VIDEORESIZE:
@@ -79,10 +116,9 @@ class GameOver:
             
         if event.type == pygame.MOUSEBUTTONDOWN and self.fade_in_complete:
             mouse_pos = pygame.mouse.get_pos()
-            if self.menu_button.check_click(mouse_pos):
+            if self.menu_button and self.menu_button.check_click(mouse_pos):
                 SceneManager.get_instance().set('start')
-            elif self.retry_button.check_click(mouse_pos):
-                # Явный сброс уровня
+            elif self.retry_button and self.retry_button.check_click(mouse_pos):
                 level = SceneManager.get_instance().scenes['level1']
                 level.reset()
                 SceneManager.get_instance().set('level1')
@@ -96,15 +132,16 @@ class GameOver:
         
         mouse_pos = pygame.mouse.get_pos()
         if self.fade_in_complete:
-            self.menu_button.hovered = self.menu_button.is_hovered(mouse_pos)
-            self.retry_button.hovered = self.retry_button.is_hovered(mouse_pos)
+            if self.menu_button:
+                self.menu_button.hovered = self.menu_button.is_hovered(mouse_pos)
+            if self.retry_button:
+                self.retry_button.hovered = self.retry_button.is_hovered(mouse_pos)
 
     def render(self, screen):
         current_width, current_height = self.current_window_size
         
         self.fullscreen_content.fill(PURPLE_DARK)
         
-        # Отображаем установленное сообщение
         text = self.font_large.render(self.message, True, self.message_color)
         text_rect = text.get_rect(
             center=(
@@ -115,8 +152,10 @@ class GameOver:
         self.fullscreen_content.blit(text, text_rect)
         
         if self.fade_in_complete:
-            self.menu_button.draw(self.fullscreen_content)
-            self.retry_button.draw(self.fullscreen_content)
+            if self.menu_button:
+                self.menu_button.draw(self.fullscreen_content)
+            if self.retry_button:
+                self.retry_button.draw(self.fullscreen_content)
         
         self.transition_surface.fill((0, 0, 0, 0))
         pygame.draw.rect(self.transition_surface, (0, 0, 0, 255 - self.alpha), 
