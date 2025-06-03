@@ -55,34 +55,18 @@ class Cloud(pygame.sprite.Sprite):
         
         return loaded_images
     
-    def update(self, all_clouds):
+    def update(self, cloud_group):
+        # Движение облака влево
         self.rect.x -= self.speed
         
+        # Если облако вышло за левую границу экрана
         if self.rect.right < 0:
-            safe_position_found = False
-            attempts = 0
-            max_attempts = 10
+            # Перемещаем его вправо за экран
+            self.rect.x = random.randint(800, 1200)
+            self.rect.y = random.randint(50, 300)
             
-            while not safe_position_found and attempts < max_attempts:
-                attempts += 1
-                new_x = WIDTH + random.randint(0, WIDTH)
-                new_y = random.randint(*self.y_range)
-                
-                too_close = False
-                for cloud in all_clouds:
-                    if cloud != self and cloud.type == self.type:
-                        distance = abs(new_x - cloud.rect.x)
-                        if distance < self.min_distance:
-                            too_close = True
-                            break
-                
-                if not too_close:
-                    safe_position_found = True
-                    self.rect.left = new_x
-                    self.rect.y = new_y
-                    speed_variation = random.uniform(-0.2, 0.2)
-                    self.speed = max(0.3, min(self.speed + speed_variation, 2.5))
-            
-            if not safe_position_found:
-                self.rect.left = WIDTH + random.randint(0, WIDTH)
-                self.rect.y = random.randint(*self.y_range)
+            # Проверяем, чтобы новое положение не пересекалось с другими облаками
+            while any(abs(self.rect.x - cloud.rect.x) < self.min_distance and 
+                     abs(self.rect.y - cloud.rect.y) < 100 for cloud in cloud_group if cloud != self):
+                self.rect.x = random.randint(800, 1200)
+                self.rect.y = random.randint(50, 300)

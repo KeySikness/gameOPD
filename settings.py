@@ -13,3 +13,8 @@ BLACK = (0, 0, 0)
 FPS = 60
 WINDOW_TITLE = "Sky Witch"
 font_path = os.path.join('assets', 'fonts', 'Neoneon1.otf')
+# Физика
+GRAVITY = 0.8
+MAX_FALL_SPEED = 15
+PLAYER_SPEED = 5
+JUMP_STRENGTH = 15

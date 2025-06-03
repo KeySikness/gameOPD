@@ -15,7 +15,7 @@ class Button:
         self.hovered = False
         self.border_color = WHITE
         self.border_width = 3
-        self.scale_factor = scale_factor  # Добавляем scale_factor как атрибут
+        self.scale_factor = scale_factor  
 
     def draw(self, surface):
         color = self.bg_color
@@ -38,16 +38,13 @@ class StartMenu:
     def __init__(self):
         self.base_width = WIDTH
         self.base_height = HEIGHT
-        
-        # Базовые размеры шрифтов
+
         self.base_title_font_size = 80
         self.base_menu_font_size = 40
         
-        # Инициализация шрифтов с базовыми размерами
         self.title_font = pygame.font.Font(font_path, self.base_title_font_size)
         self.menu_font = pygame.font.Font(font_path, self.base_menu_font_size)
         
-        # Масштабируемые атрибуты
         self.scale_x = 1.0
         self.scale_y = 1.0
         self.scale_factor = 1.0
@@ -73,7 +70,7 @@ class StartMenu:
                 self.menu_font,
                 PURPLE_MID,
                 WHITE,
-                self.scale_factor  # Передаем текущий scale_factor
+                self.scale_factor 
             )
             self.buttons.append(button)
 
@@ -83,25 +80,21 @@ class StartMenu:
         self.scale_y = height / self.base_height
         self.scale_factor = min(self.scale_x, self.scale_y)
         
-        # Масштабирование шрифтов
         self.title_font = pygame.font.Font(font_path, int(self.base_title_font_size * self.scale_factor))
         self.menu_font = pygame.font.Font(font_path, int(self.base_menu_font_size * self.scale_factor))
         
-        # Обновление заголовка
         self.title_text = self.title_font.render("Sky Witch", True, PURPLE_NEON)
         self.title_rect = self.title_text.get_rect(center=(width // 2, int(height // 4)))
         
-        # Масштабирование кнопок
         start_y = height // 2
         spacing = int(20 * self.scale_factor)
         
         for idx, btn in enumerate(self.buttons):
-            btn.scale_factor = self.scale_factor  # Обновляем scale_factor для каждой кнопки
+            btn.scale_factor = self.scale_factor  
             btn.rect.width = int(250 * self.scale_factor)
             btn.rect.height = int(60 * self.scale_factor)
             btn.rect.center = (width // 2, start_y + idx * (btn.rect.height + spacing))
             
-            # Обновление шрифта и текста кнопки
             btn.font = self.menu_font
             btn.rendered_text = btn.font.render(btn.text, True, btn.text_color)
             btn.border_width = int(3 * self.scale_factor)
