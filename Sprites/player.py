@@ -16,7 +16,8 @@ class Player(pygame.sprite.Sprite):
             pygame.draw.circle(self.image, (255, 0, 255), (32, 32), 32)
             self.original_image_right = self.image
             self.original_image_left = pygame.transform.flip(self.image, True, False)
-        
+
+        self.alive = True
         self.rect = self.image.get_rect(topleft=(x, y))
         self.speed = 5
         self.jump_power = -15
@@ -26,7 +27,9 @@ class Player(pygame.sprite.Sprite):
         self.facing_right = True
         self.world_x = x
 
-    def update(self, platforms, stars=None):  # Добавляем stars для коллизии
+    def update(self, platforms, stars=None): # Добавляем stars для коллизии
+        if not self.alive:
+            return
         # Движение по X (как у вас было)
         keys = pygame.key.get_pressed()
         self.velocity_x = 0
@@ -77,6 +80,8 @@ class Player(pygame.sprite.Sprite):
                     star.collect()  # Ваш метод сбора звезды
 
     def handle_input(self):
+        if not self.alive:
+            return
         keys = pygame.key.get_pressed()
         if keys[pygame.K_w] and self.on_ground:
             self.velocity_y = self.jump_power

@@ -138,7 +138,10 @@ class LevelCompleted:
                 from scene_manager import SceneManager
                 SceneManager.get_instance().set('start')
             elif self.next_button and self.next_button.check_click(mouse_pos):
-                print("Кнопка 'Далее' нажата. Здесь будет переход на следующий уровень.")
+                from scene_manager import SceneManager
+                level = SceneManager.get_instance().scenes['level2']
+                level.reset()
+                SceneManager.get_instance().set('level2')
             elif self.retry_button and self.retry_button.check_click(mouse_pos):
                 from scene_manager import SceneManager
                 level = SceneManager.get_instance().scenes['level1']

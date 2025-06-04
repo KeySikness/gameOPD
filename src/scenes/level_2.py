@@ -83,8 +83,17 @@ class Level2:
         self.back_button.rendered_text = self.back_button.font.render(self.back_button.text, True, self.back_button.text_color)
 
     def _create_enemies(self):
-            for x, y in self.config['enemies_pos']:
-                self.enemies.add(Enemy(x, y))
+        self.enemies = pygame.sprite.Group()  # создаем группу врагов
+        for enemy_data in self.config.get('enemies_pos', []):
+            x = enemy_data['x']
+            y = enemy_data['y']
+            min_x = enemy_data['min_x']
+            max_x = enemy_data['max_x']
+            enemy = Enemy(x, y)
+            # присваиваем границы движения
+            enemy.min_x = min_x
+            enemy.max_x = max_x
+            self.enemies.add(enemy)
 
     def _create_platforms(self):
         """Генерация платформ из конфига"""
@@ -185,11 +194,31 @@ class Level2:
         """Обновление игровых объектов"""
         for cloud in self.clouds:
             cloud.update(self.clouds)
+
+        for enemy in getattr(self, 'enemies', []):
+            enemy.update()
                 
         self._update_visible_platforms()
         self.player.handle_input()
         self.player.update(self.visible_platforms)
+        self._check_enemy_collisions()
         self._check_star_collisions()
+
+    def _check_enemy_collisions(self):
+        """проверка на коллизию с врагами"""
+        if not getattr(self.player, 'alive', True):
+            return  # если уже мертвый — ничего не делаем
+
+        for enemy in getattr(self, 'enemies', []):
+            if self.player.rect.colliderect(enemy.rect):
+                self._player_dies()
+                break
+
+    def _player_dies(self):
+        print("Игрок убит врагом!")
+        self.player.alive = False
+        # перезапуск уровня:
+        self._transition_to_scene('game_over')
 
     def _check_star_collisions(self):
         """Проверка сбора звезд"""
