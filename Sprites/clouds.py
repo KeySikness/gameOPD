@@ -19,7 +19,7 @@ class Cloud(pygame.sprite.Sprite):
             self.speed = random.uniform(1.0, 1.5)
             self.y_range = (HEIGHT//3, HEIGHT//2)
             self.min_distance = 400
-        else:  # big
+        else:  
             self.speed = random.uniform(1.5, 2.0)
             self.y_range = (HEIGHT//2, HEIGHT*2//3)
             self.min_distance = 500
@@ -56,16 +56,12 @@ class Cloud(pygame.sprite.Sprite):
         return loaded_images
     
     def update(self, cloud_group):
-        # Движение облака влево
         self.rect.x -= self.speed
         
-        # Если облако вышло за левую границу экрана
         if self.rect.right < 0:
-            # Перемещаем его вправо за экран
             self.rect.x = random.randint(800, 1200)
             self.rect.y = random.randint(50, 300)
             
-            # Проверяем, чтобы новое положение не пересекалось с другими облаками
             while any(abs(self.rect.x - cloud.rect.x) < self.min_distance and 
                      abs(self.rect.y - cloud.rect.y) < 100 for cloud in cloud_group if cloud != self):
                 self.rect.x = random.randint(800, 1200)

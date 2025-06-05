@@ -13,7 +13,7 @@ class GameOver:
         
         self.font_large = None
         self.font_small = None
-        self.menu_button = None  # Пока не инициализированы
+        self.menu_button = None  
         self.retry_button = None
         
         self.alpha = 0
@@ -25,19 +25,16 @@ class GameOver:
         self.fullscreen_content = None
         self.message = "ИГРА ОКОНЧЕНА"
         self.message_color = WHITE
-        
-        # Инициализируем кнопки перед вызовом update_layout
         self._init_buttons()
         self.update_layout((WIDTH, HEIGHT))
 
     def _init_buttons(self):
-        """Инициализация кнопок с базовыми параметрами"""
         button_width = int(250 * self.scale_factor)
         button_height = int(60 * self.scale_factor)
         
         self.menu_button = Button(
             "В меню",
-            0, 0,  # Временные координаты
+            0, 0,  
             button_width,
             button_height,
             pygame.font.Font(font_path, int(30 * self.scale_factor)),
@@ -50,7 +47,7 @@ class GameOver:
         
         self.retry_button = Button(
             "Еще раз",
-            0, 0,  # Временные координаты
+            0, 0, 
             button_width,
             button_height,
             pygame.font.Font(font_path, int(30 * self.scale_factor)),
@@ -74,7 +71,6 @@ class GameOver:
         button_width = int(250 * self.scale_factor)
         button_height = int(60 * self.scale_factor)
         
-        # Обновляем только параметры существующих кнопок
         if self.menu_button:
             self.menu_button.rect.width = button_width
             self.menu_button.rect.height = button_height
@@ -104,7 +100,6 @@ class GameOver:
         self.fullscreen_content = pygame.Surface((width, height))
         self.transition_surface = pygame.Surface((width, height), pygame.SRCALPHA)
 
-    # Остальные методы остаются без изменений
     def set_message(self, message, color=None):
         self.message = message
         if color:
@@ -119,9 +114,14 @@ class GameOver:
             if self.menu_button and self.menu_button.check_click(mouse_pos):
                 SceneManager.get_instance().set('start')
             elif self.retry_button and self.retry_button.check_click(mouse_pos):
-                level = SceneManager.get_instance().scenes['level1']
-                level.reset()
-                SceneManager.get_instance().set('level1')
+                manager = SceneManager.get_instance()
+                failed_level = manager.last_scene_name
+                if failed_level and failed_level in manager.scenes:
+                    level = manager.scenes[failed_level]
+                    if hasattr(level, 'reset'):
+                        level.reset()
+                    manager.set(failed_level)
+
 
     def update(self):
         if not self.fade_in_complete:

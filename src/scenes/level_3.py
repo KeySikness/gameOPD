@@ -3,15 +3,45 @@ import random
 from settings import *
 from scene_manager import SceneManager
 from src.scenes.start_menu import Button
-from Sprites import Platform, Player
+from Sprites import Platform, Player, Star
 from Sprites.clouds import Cloud
-from Sprites.star import Star
+from Sprites.monsters import Monster
+from Sprites.boss import Boss
 
-class Level1:
+class Level3:
     def __init__(self):
-        self.config = LEVEL1_CONFIG  
+        self.config = {
+            'background_color': PURPLE_DARK,
+            'level_name': "Уровень 3",
+            'level_color': PURPLE_NEON,
+            'ui_colors': {
+                'bg': PURPLE_MID,
+                'border': PURPLE_LIGHT
+            },
+            'player_start_pos': (100, HEIGHT - 150),
+            'platform_positions': self._generate_platforms(),
+            'star_indices': [3, 6, 9],  # Индексы платформ, на которых будут звезды
+            'cloud_config': [
+                {"type": "small", "count": 8, "y_range": (50, HEIGHT // 3)},
+                {"type": "medium", "count": 5, "y_range": (HEIGHT // 3, HEIGHT // 2)},
+                {"type": "big", "count": 4, "y_range": (HEIGHT // 2, HEIGHT * 2 // 3)}
+            ],
+            'total_stars': 3  # Всего нужно собрать 3 звезды
+        }
+        
         self._init_base_variables()
         self.reset()
+
+    def _generate_platforms(self):
+        platform_width = 100
+        platform_height = 20
+        platform_count = (WIDTH // platform_width) + 15  # Больше платформ, если игрок идет вправо
+
+        y = HEIGHT - platform_height
+        platforms = [(i * platform_width, y) for i in range(platform_count)]
+        return platforms
+
+        
 
     def _init_base_variables(self):
         self.base_width = WIDTH
@@ -34,13 +64,27 @@ class Level1:
         self.visible_platforms = pygame.sprite.Group()
         self.clouds = pygame.sprite.Group()
         self.stars = pygame.sprite.Group()
+        self.monsters = pygame.sprite.Group()
 
     def _init_game_objects(self):
         self.player = Player(*self.config['player_start_pos'])
         self._create_platforms()
         self._create_clouds()
         self._create_stars()
+        self._create_monsters()
         self.game_objects.add(self.player)
+        
+        # Создание босса на последней платформе
+        platforms_sorted = sorted(self.all_platforms.sprites(), key=lambda p: p.rect.x)
+        if platforms_sorted:
+            last_platform = platforms_sorted[10]
+            self.boss = Boss(
+                last_platform.rect.centerx - 50,
+                last_platform.rect.top - 100,
+                self.all_platforms
+            )
+            self.boss.rect.bottom = last_platform.rect.top
+            self.game_objects.add(self.boss)
 
     def _init_game_state(self):
         self.background = pygame.Surface((WIDTH, HEIGHT))
@@ -63,17 +107,19 @@ class Level1:
             self.base_width - 170, 20, 
             150, 50,
             pygame.font.Font(font_path, 30),
-            PURPLE_MID,
+            self.config['ui_colors']['bg'],
             WHITE,
             self.scale_factor
         )
         self.back_button.border_color = WHITE
         self.back_button.border_width = 3
-        self.back_button.rendered_text = self.back_button.font.render(self.back_button.text, True, self.back_button.text_color)
 
     def _create_platforms(self):
         for x, y in self.config['platform_positions']:
-            self.all_platforms.add(Platform(x, y))
+            platform = Platform(x, y)
+            platform.rect.x = x
+            platform.rect.y = y
+            self.all_platforms.add(platform)
         self._update_visible_platforms()
 
     def _create_stars(self):
@@ -81,12 +127,44 @@ class Level1:
         for idx in self.config['star_indices']:
             if idx < len(platforms):
                 platform = platforms[idx]
-                self.stars.add(Star(platform.rect.centerx, platform.rect.top - 50, self.scale_factor))
+                star = Star(platform.rect.centerx, platform.rect.top - 50, self.scale_factor)
+                self.stars.add(star)
+
 
     def _create_clouds(self):
         for config in self.config['cloud_config']:
             for _ in range(config["count"]):
                 self._attempt_add_cloud(config)
+
+    def _create_monsters(self):
+        platforms = sorted(self.all_platforms.sprites(), key=lambda p: p.rect.x)
+        
+        if len(platforms) >= 1:
+            platform = platforms[-1]
+            
+            monster1 = Monster(
+                platform.rect.right - 100,  
+                platform.rect.top - 50,    
+                self.all_platforms,
+                monster_type=1
+            )
+            monster1.rect.bottom = platform.rect.top
+            monster1.direction = -1  
+            monster1.speed = 2.5
+            self.monsters.add(monster1)
+            self.game_objects.add(monster1)
+            
+            monster2 = Monster(
+                platform.rect.centerx,      
+                platform.rect.top - 50,
+                self.all_platforms,
+                monster_type=2
+            )
+            monster2.rect.bottom = platform.rect.top
+            monster2.direction = -1 
+            monster2.speed = 2.0
+            self.monsters.add(monster2)
+            self.game_objects.add(monster2)
 
     def _attempt_add_cloud(self, config):
         x = random.randint(0, WIDTH)
@@ -136,11 +214,82 @@ class Level1:
 
     def update(self):
         self._update_button_state()
+        self._check_boss_collision()
         self._check_game_over()
         
         if not self.game_over:
             self._update_game_objects()
             self._check_level_completion()
+            
+
+        if hasattr(self, 'boss'):
+            self.boss.platform_group = self.all_platforms
+            self.boss.update(self.player)
+
+            
+        self.monsters.update()
+        # Снимаем временную неуязвимость после 1 секунды
+        if getattr(self, 'temporary_invincible', False):
+            if pygame.time.get_ticks() - self.invincibility_timer > 1000:
+                self.temporary_invincible = False
+
+
+    def _check_boss_collision(self):
+        if hasattr(self, 'boss') and self.player.rect.colliderect(self.boss.rect):
+            if (self.player.rect.bottom < self.boss.rect.top + 20 and 
+                self.player.velocity_y > 0 and 
+                not getattr(self.player, 'just_attacked_boss', False)):  # Атака сверху
+                self.boss.take_damage(1)
+
+                boss_x = self.boss.rect.centerx
+                boss_y = self.boss.rect.bottom
+
+                left_platform = None
+                right_platform = None
+                min_left_dist = float('inf')
+                min_right_dist = float('inf')
+
+                for platform in self.all_platforms:
+                    dy = abs(platform.rect.top - boss_y)
+                    if dy < 50:  # Примерно тот же уровень
+                        dx = platform.rect.centerx - boss_x
+                        if dx < 0 and abs(dx) < min_left_dist:
+                            min_left_dist = abs(dx)
+                            left_platform = platform
+                        elif dx > 0 and dx < min_right_dist:
+                            min_right_dist = dx
+                            right_platform = platform
+
+                # Отскок от босса
+                self.player.velocity_y = -12
+
+                if self.player.rect.centerx < boss_x and left_platform:
+                    self.player.velocity_x = -7
+                elif self.player.rect.centerx >= boss_x and right_platform:
+                    self.player.velocity_x = 7
+                else:
+                    self.player.velocity_x = -6 if self.player.rect.centerx < boss_x else 6
+
+                # Убираем возможность сразу снова столкнуться
+                self.player.rect.bottom = self.boss.rect.top - 10
+
+                # Временная неуязвимость и блокировка повторной атаки
+                self.temporary_invincible = True
+                self.invincibility_timer = pygame.time.get_ticks()
+                self.player.just_attacked_boss = True  # ❗ Блок повторной атаки
+
+                if self.boss.hp <= 0:
+                    del self.boss
+            else:
+                # Боковое столкновение
+                if not getattr(self, 'temporary_invincible', False):
+                    self.game_over = True
+                    self.game_over_message = "Уровень не пройден"
+
+
+
+
+
 
     def _update_button_state(self):
         mouse_pos = pygame.mouse.get_pos()
@@ -161,7 +310,12 @@ class Level1:
                 
         self._update_visible_platforms()
         self.player.handle_input()
-        self.player.update(self.visible_platforms)
+        self.player.update(self.all_platforms)  # Передаём сразу все платформы
+        # Сброс флага, если игрок встал на платформу (значит, снова можно атаковать)
+        if self.player.on_ground:
+            self.player.just_attacked_boss = False
+
+
         self._check_star_collisions()
 
     def _check_star_collisions(self):
@@ -171,25 +325,27 @@ class Level1:
 
     def _check_level_completion(self):
         if self.stars_collected >= self.config['total_stars'] and not self.showing_completion:
-            self.showing_completion = True
-            self.transition_alpha = 0
-            self.game_over_message = "Уровень пройден!"
-            
-            level_completed = SceneManager.get_instance().scenes.get('level_completed')
-            if level_completed:
-                level_completed.set_current_level('level1') 
-                
-        if self.showing_completion:
-            self.transition_alpha += 5
-            if self.transition_alpha >= 255:
-                self._transition_to_scene('level_completed')
+            # Проверяем, есть ли еще босс (если нет - уровень пройден)
+            if not hasattr(self, 'boss'):
+                self.showing_completion = True
+                self.transition_alpha = 0
+                self.game_over_message = "Уровень пройден!"
+                       
+                # Устанавливаем текущий уровень
+                level_completed_scene = SceneManager.get_instance().scenes['level_completed']
+                level_completed_scene.set_current_level('level3')  # <--- ВАЖНО!
+
+                # Переход на сцену завершения
+                SceneManager.get_instance().set('level_completed')
 
     def _transition_to_scene(self, scene_name):
-        """Переход на другую сцену"""
         if scene_name == 'game_over':
             game_over_scene = SceneManager.get_instance().scenes['game_over']
             game_over_scene.set_message(self.game_over_message)
+        elif scene_name == 'level_completed':
+            SceneManager.get_instance().set_last_completed_level("level3")  # 💾 Сохраняем
         SceneManager.get_instance().set(scene_name)
+
 
     def render(self, screen):
         current_size = screen.get_size()
@@ -207,17 +363,24 @@ class Level1:
         
         for cloud in self.clouds:
             self._render_sprite(screen, cloud.image, cloud.rect)
-
-        for platform in self.visible_platforms:
-            self._render_sprite(screen, platform.image, platform.rect, camera_x)
         
+        for platform in self.all_platforms:
+            self._render_sprite(screen, platform.image, platform.rect, camera_x)
 
+        
         for star in self.stars:
             self._render_sprite(screen, star.image, star.rect, camera_x)
-
+        
+        for monster in self.monsters:
+            monster.draw(screen, camera_x)
+        
         player_img = (self.player.original_image_right if self.player.facing_right 
-                     else self.player.original_image_left)
+                    else self.player.original_image_left)
         self._render_player(screen, player_img)
+        
+        if hasattr(self, 'boss'):
+            self._render_sprite(screen, self.boss.image, self.boss.rect, camera_x)
+            self.boss.draw(screen, camera_x)
 
     def _render_sprite(self, screen, image, rect, camera_x=0):
         x = int((rect.x - camera_x) * self.scale_x)
@@ -252,16 +415,16 @@ class Level1:
         )
         text_rect = level_text.get_rect(center=(
             int(self.base_width // 2 * self.scale_x), 
-            int(30 * self.scale_y)
-        ))
-        
+            int(30 * self.scale_y))
+        )
+
         bg_width = text_rect.width + int(40 * self.scale_factor)
         bg_height = text_rect.height + int(20 * self.scale_factor)
         bg_rect = pygame.Rect(0, 0, bg_width, bg_height)
         bg_rect.center = (
             int(self.base_width // 2 * self.scale_x), 
-            int(30 * self.scale_y)
-        )
+            int(30 * self.scale_y))
+        
         
         colors = self.config['ui_colors']
         pygame.draw.rect(screen, colors['bg'], bg_rect, border_radius=int(12 * self.scale_factor))

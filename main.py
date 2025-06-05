@@ -4,10 +4,11 @@ from scene_manager import SceneManager
 from src.scenes.start_menu import StartMenu
 from src.scenes.settings_scene import SettingsScene
 from src.scenes.level_1 import Level1
-from src.scenes.level_2 import Level2
 from settings import *
 from src.scenes.level_completed import LevelCompleted
 from src.scenes.game_over import GameOver
+from src.scenes.level_2 import Level2
+from src.scenes.level_3 import Level3
 import os
 
 def main():
@@ -24,16 +25,14 @@ def main():
     pygame.mixer.music.play(-1)  
 
     scene_manager = SceneManager.get_instance()
-
-    # Создаем и добавляем все сцены
     scene_manager.add('start', StartMenu())
     scene_manager.add('settings', SettingsScene())
     scene_manager.add('level1', Level1())
-    scene_manager.add('level2', Level2())
     scene_manager.add('level_completed', LevelCompleted())
     scene_manager.add('game_over', GameOver())
-
-    # Устанавливаем начальную сцену
+    scene_manager.add('level2', Level2())
+    scene_manager.add('level_completed', LevelCompleted())  
+    scene_manager.add('level3', Level3())
     scene_manager.set('start')
 
     running = True

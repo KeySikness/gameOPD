@@ -24,17 +24,18 @@ class LevelCompleted:
         self.current_window_size = (WIDTH, HEIGHT)
         self.fullscreen_content = None
         
-        # Инициализируем кнопки перед вызовом update_layout
+        self.current_level = None
+        
         self._init_buttons()
         self.update_layout((WIDTH, HEIGHT))
 
+    def set_current_level(self, level_name):
+        self.current_level = level_name
+
     def _init_buttons(self):
-        """Инициализация кнопок с базовыми параметрами"""
         button_width = int(200 * self.scale_factor)
         button_height = int(50 * self.scale_factor)
         button_spacing = int(20 * self.scale_factor)
-        
-        # Временные координаты, будут обновлены в update_layout
         self.menu_button = Button(
             "В меню",
             0, 0,
@@ -88,10 +89,8 @@ class LevelCompleted:
         button_height = int(50 * self.scale_factor)
         button_spacing = int(20 * self.scale_factor)
         
-        # Центральная позиция для группы кнопок
         buttons_start_x = width // 2 - (button_width * 3 + button_spacing * 2) // 2
         
-        # Обновляем существующие кнопки
         if self.menu_button:
             self.menu_button.rect.x = buttons_start_x
             self.menu_button.rect.y = int(height // 2 + 50 * self.scale_y)
@@ -134,19 +133,36 @@ class LevelCompleted:
             
         if event.type == pygame.MOUSEBUTTONDOWN and self.fade_in_complete:
             mouse_pos = pygame.mouse.get_pos()
+
             if self.menu_button and self.menu_button.check_click(mouse_pos):
                 from scene_manager import SceneManager
                 SceneManager.get_instance().set('start')
+                
             elif self.next_button and self.next_button.check_click(mouse_pos):
                 from scene_manager import SceneManager
-                level = SceneManager.get_instance().scenes['level2']
-                level.reset()
-                SceneManager.get_instance().set('level2')
+                scene_manager = SceneManager.get_instance()
+                
+                # Определяем следующий уровень на основе текущего
+                if self.current_level == 'level2':
+                    level3 = scene_manager.scenes.get('level3')
+                    if level3:
+                        level3.reset()
+                        scene_manager.set('level3')
+                elif self.current_level == 'level1':
+                    level2 = scene_manager.scenes.get('level2')
+                    if level2:
+                        level2.reset()
+                        scene_manager.set('level2')
+                        
             elif self.retry_button and self.retry_button.check_click(mouse_pos):
                 from scene_manager import SceneManager
-                level = SceneManager.get_instance().scenes['level1']
-                level.reset()
-                SceneManager.get_instance().set('level1')
+                scene_manager = SceneManager.get_instance()
+                
+                if self.current_level:
+                    current_scene = scene_manager.scenes.get(self.current_level)
+                    if current_scene:
+                        current_scene.reset()
+                        scene_manager.set(self.current_level)
 
     def update(self):
         if not self.fade_in_complete:

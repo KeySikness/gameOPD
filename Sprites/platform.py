@@ -1,6 +1,6 @@
 import pygame
 import os
-from settings import WIDTH
+from settings import *
 
 class Platform(pygame.sprite.Sprite):
     def __init__(self, x, y):
@@ -22,30 +22,24 @@ class InfinitePlatform:
         self.segments = pygame.sprite.Group()
         self.segment_width = 128
         self.camera_offset = 0
-        
-        # Создаем начальные сегменты платформы
         for i in range(-1, WIDTH // self.segment_width + 2):
             segment = Platform(i * self.segment_width, screen_height)
             self.segments.add(segment)
     
     def update(self, camera_offset):
         self.camera_offset = camera_offset
-        
-        # Фиксируем первую платформу у левого края
         first_segment = min(self.segments.sprites(), key=lambda s: s.rect.x)
         if first_segment.rect.x > 0:
             offset = first_segment.rect.x
             for segment in self.segments:
                 segment.rect.x -= offset
         
-        # Добавляем новые сегменты справа
         rightmost = max(s.rect.right for s in self.segments)
         while rightmost - camera_offset < WIDTH + self.segment_width * 2:
             new_segment = Platform(rightmost, self.screen_height)
             self.segments.add(new_segment)
             rightmost = new_segment.rect.right
         
-        # Удаляем сегменты, которые далеко слева
         for segment in list(self.segments):
             if segment.rect.right - camera_offset < -self.segment_width * 2:
                 segment.kill()
