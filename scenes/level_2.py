@@ -1,4 +1,4 @@
-import pygame
+'''import pygame
 import random
 from settings import *
 from scene_manager import SceneManager
@@ -17,14 +17,6 @@ class Level2:
         
         # Создание игрока
         self.player = Player(100, HEIGHT - 200)
-
-        # Враги
-        self.enemies = pygame.sprite.Group()
-        for enemy_data in LEVEL2_CONFIG['enemies_pos']:
-            enemy = Enemy(enemy_data['x'], enemy_data['y'])
-            enemy.min_x = enemy_data['min_x']
-            enemy.max_x = enemy_data['max_x']
-            self.enemies.add(enemy)
         
         # Кнопка назад
         self.back_button = self.create_back_button()
@@ -97,8 +89,8 @@ class Level2:
         self.platform.update(self.camera_offset)
 
         # Обнова врага
-        for enemy in self.enemies:
-            enemy.update(self.enemies)
+        for monster in self.monsters:
+            monster.update(self.monsters)
         
         # Обновление облаков
         for cloud in self.clouds:
@@ -121,7 +113,7 @@ class Level2:
         self.player.draw(screen, self.camera_offset)
 
         # Отрисовка врага
-        self.enemies.draw(screen)
+        self.monsters.draw(screen)
         
         # Отрисовка кнопки
         self.back_button.draw(screen)
@@ -145,4 +137,4 @@ class Level2:
         pygame.draw.rect(screen, border_color, bg_rect, border_radius=12, width=2)
         
         # текст поверх фона
-        screen.blit(level_text, text_rect)
+        screen.blit(level_text, text_rect)'''

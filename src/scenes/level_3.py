@@ -28,7 +28,7 @@ class Level3:
             ],
             'total_stars': 3  # Всего нужно собрать 3 звезды
         }
-        
+
         self._init_base_variables()
         self.reset()
 
@@ -71,7 +71,6 @@ class Level3:
         self._create_platforms()
         self._create_clouds()
         self._create_stars()
-        self._create_monsters()
         self.game_objects.add(self.player)
         
         # Создание босса на последней платформе
@@ -135,36 +134,6 @@ class Level3:
         for config in self.config['cloud_config']:
             for _ in range(config["count"]):
                 self._attempt_add_cloud(config)
-
-    def _create_monsters(self):
-        platforms = sorted(self.all_platforms.sprites(), key=lambda p: p.rect.x)
-        
-        if len(platforms) >= 1:
-            platform = platforms[-1]
-            
-            monster1 = Monster(
-                platform.rect.right - 100,  
-                platform.rect.top - 50,    
-                self.all_platforms,
-                monster_type=1
-            )
-            monster1.rect.bottom = platform.rect.top
-            monster1.direction = -1  
-            monster1.speed = 2.5
-            self.monsters.add(monster1)
-            self.game_objects.add(monster1)
-            
-            monster2 = Monster(
-                platform.rect.centerx,      
-                platform.rect.top - 50,
-                self.all_platforms,
-                monster_type=2
-            )
-            monster2.rect.bottom = platform.rect.top
-            monster2.direction = -1 
-            monster2.speed = 2.0
-            self.monsters.add(monster2)
-            self.game_objects.add(monster2)
 
     def _attempt_add_cloud(self, config):
         x = random.randint(0, WIDTH)
@@ -285,11 +254,6 @@ class Level3:
                 if not getattr(self, 'temporary_invincible', False):
                     self.game_over = True
                     self.game_over_message = "Уровень не пройден"
-
-
-
-
-
 
     def _update_button_state(self):
         mouse_pos = pygame.mouse.get_pos()
