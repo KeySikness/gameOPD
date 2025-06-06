@@ -1,60 +1,81 @@
 import pygame
+import os
 import random
-from settings import *
-from Sprites.platform import Platform
-
+from settings import MAX_FALL_SPEED
 
 class Monster(pygame.sprite.Sprite):
     def __init__(self, x, y, platform_group):
         super().__init__()
         self.platform_group = platform_group
-        self.images = self.load_images()
+
+        # Загрузка изображений
+        self.images = self._load_images()
         self.image = random.choice(self.images)
         self.rect = self.image.get_rect(topleft=(x, y))
 
-        self.velocity_x = 0
-        self.velocity_y = 0
+        # Движение
+        self.direction = random.choice([-1, 1])
         self.speed = 1.5
         self.gravity = 0.5
+        self.velocity_y = 0
         self.on_ground = False
-        self.max_fall_speed = MAX_FALL_SPEED
-        self.direction = random.choice([-1,1])
 
-    def load_images(self):
-        loaded_images = [
+    def _load_images(self):
+        return [
             pygame.image.load(os.path.join('assets', 'image', 'monster1.png')).convert_alpha(),
             pygame.image.load(os.path.join('assets', 'image', 'monster2.png')).convert_alpha()
         ]
-        return loaded_images
 
     def update(self):
-        self._patrol()
         self._apply_gravity()
-        self._check_platform_collision()
-
-    def _patrol(self):
-        self.rect.x += self.speed * self.direction
-        if not self._has_ground_ahead():
-            self.direction *= -1
-
-    def _has_ground_ahead(self):
-        check_x = self.rect.midbottom[0] + self.direction * self.rect.width // 2
-        check_y = self.rect.bottom + 5
-        check_rect = pygame.Rect(check_x, check_y, 5, 5)
-        return any(check_rect.colliderect(platform.rect) for platform in self.platform_group)
+        if self.on_ground:
+            self._move_horizontally()
+        self._check_collisions()
 
     def _apply_gravity(self):
-        self.velocity_y += self.gravity
-        self.rect.y += self.velocity_y
+        if not self.on_ground:
+            self.velocity_y += self.gravity
+            if self.velocity_y > MAX_FALL_SPEED:
+                self.velocity_y = MAX_FALL_SPEED
+            self.rect.y += self.velocity_y
 
-    def _check_platform_collision(self):
+    def _move_horizontally(self):
+        # Пробуем шагнуть
+        self.rect.x += self.direction * self.speed
+
+        # Если нет платформы впереди или удар в стену — разворачиваемся
+        if not self._has_platform_ahead() or self._hits_wall():
+            self.rect.x -= self.direction * self.speed  # Откат шага
+            self.direction *= -1
+
+    def _has_platform_ahead(self):
+        """Проверка: есть ли под ногой в направлении движения платформа"""
+        if self.direction == -1:
+            foot_x = self.rect.left - 1
+        else:
+            foot_x = self.rect.right + 1
+
+        foot_y = self.rect.bottom + 1
+        check_rect = pygame.Rect(foot_x, foot_y, 2, 2)
+
+        return any(check_rect.colliderect(p.rect) for p in self.platform_group)
+
+    def _hits_wall(self):
+        """Проверка: есть ли платформа прямо сбоку, как стена"""
+        self.rect.x += self.direction * 1
+        collided = any(self.rect.colliderect(p.rect) for p in self.platform_group)
+        self.rect.x -= self.direction * 1
+        return collided
+
+    def _check_collisions(self):
         self.on_ground = False
         for platform in self.platform_group:
-            if self.rect.colliderect(platform.rect) and self.velocity_y >= 0:
-                self.rect.bottom = platform.rect.top
-                self.velocity_y = 0
-                self.on_ground = True
+            if self.rect.colliderect(platform.rect):
+                if self.velocity_y >= 0 and self.rect.bottom <= platform.rect.bottom:
+                    self.rect.bottom = platform.rect.top
+                    self.velocity_y = 0
+                    self.on_ground = True
 
     def draw(self, surface, camera_x=0):
-        x = self.rect.x - camera_x
-        surface.blit(self.image, (x, self.rect.y))
+        draw_x = self.rect.x - camera_x
+        surface.blit(self.image, (draw_x, self.rect.y))

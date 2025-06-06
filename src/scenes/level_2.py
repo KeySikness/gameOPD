@@ -28,6 +28,7 @@ class Level2:
             'total_stars': 3
         }
 
+        print('создан уровень 2')
         self._init_base_variables()
         self.reset()
 
@@ -92,11 +93,7 @@ class Level2:
         self._create_platforms()
         self._create_clouds()
         self._create_stars()
-        if hasattr(self, 'monsters'):
-            self.monsters.empty()
-        else:
-            self.monsters = pygame.sprite.Group()
-
+        self.monsters = pygame.sprite.Group()
         self._create_monsters()
         self.game_objects.add(self.player)
 
@@ -149,32 +146,25 @@ class Level2:
                 self._attempt_add_cloud(config)
 
     def _create_monsters(self):
-        self.monsters.empty()
-        self.enemies = pygame.sprite.Group()
+        if not hasattr(self, 'monsters'):
+            self.monsters = pygame.sprite.Group()
+        else:
+            self.monsters.empty()
 
         platforms_sorted = sorted(self.all_platforms.sprites(), key=lambda p: p.rect.x)
-        if platforms_sorted:
-            platform = platforms_sorted[-1]
-            monster1 = Monster(
-                platform.rect.right - 100,
-                platform.rect.top - 50,
-                self.all_platforms
-            )
-        monster1.rect.bottom = platform.rect.top
-        monster1.direction = -1
-        monster1.speed = 1.5
-        self.monsters.add(monster1)
+        if not platforms_sorted:
+            return
 
-        monster2 = Monster(
-            platform.rect.centerx,
-            platform.rect.top - 50,
-            self.all_platforms
-        )
-        monster2.rect.bottom = platform.rect.top
-        monster2.direction = -1
-        monster2.speed = 1.5
-        self.monsters.add(monster2)
-        print(f"Количество монстров: {len(self.monsters)}")
+        platform = platforms_sorted[-1]
+
+        positions = [
+            (platform.rect.right - 400, platform.rect.top - 50),
+            (platform.rect.centerx, platform.rect.top - 50)
+        ]
+
+        for x, y in positions:
+            monster = Monster(x, y, self.all_platforms)
+            self.monsters.add(monster)
 
     def _attempt_add_cloud(self, config):
         x = random.randint(0, WIDTH)
@@ -294,7 +284,6 @@ class Level2:
         self._render_game_objects(screen)
         self._render_ui(screen, current_size)
         self._render_transitions(screen, current_size)
-        self.monsters.draw(screen)
 
     def _render_background(self, screen, current_size):
         scaled_bg = pygame.transform.scale(self.background, current_size)
