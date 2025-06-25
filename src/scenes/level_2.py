@@ -49,7 +49,8 @@ class Level2:
                     self.player.velocity_y = -15
                     self.player.rect.y -= 10
                 else:
-                    self._player_dies()
+                    self.game_over = True
+                    self.game_over_message = "Уровень не пройден"
 
     def _player_dies(self):
         self.player.die()
@@ -193,7 +194,6 @@ class Level2:
         self.font = pygame.font.Font(font_path, int(24 * self.scale_factor))
         self.level_font = pygame.font.Font(font_path, int(36 * self.scale_factor))
 
-        # Обновляем кнопку вручную
         self.back_button.rect.x = int((self.base_width - 170) * self.scale_x)
         self.back_button.rect.y = int(20 * self.scale_y)
         self.back_button.rect.width = int(150 * self.scale_factor)

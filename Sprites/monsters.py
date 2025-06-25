@@ -51,28 +51,22 @@ class Monster(pygame.sprite.Sprite):
         self._check_collisions()
 
     def die(self):
-        """Обработка смерти монстра"""
         self.is_alive = False
         self.is_dead = True
         self.image = self.dead_image
 
-        # Получаем координаты центра монстра
         center_x = self.rect.centerx
 
-        # Создаем новый rect для кучки пыли
         self.rect = self.image.get_rect()
 
-        # Позиционируем:
-        self.rect.centerx = center_x  # Центр по X остается тем же
+        self.rect.centerx = center_x
 
         if self.platform:
-            # Ставим кучку пыли прямо на платформу
             self.rect.bottom = self.platform.rect.top
         else:
-            # Если платформы нет, ставим на текущую позицию низа монстра
             self.rect.bottom = old_bottom
 
-        self.rect.y += 5  # Опускаем еще на 5 пикселей
+        self.rect.y += 5
 
     def _apply_gravity(self):
         if not self.on_ground:

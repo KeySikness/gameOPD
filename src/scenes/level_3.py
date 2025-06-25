@@ -213,7 +213,7 @@ class Level3:
 
                 for platform in self.all_platforms:
                     dy = abs(platform.rect.top - boss_y)
-                    if dy < 50:  # Примерно тот же уровень
+                    if dy < 50:
                         dx = platform.rect.centerx - boss_x
                         if dx < 0 and abs(dx) < min_left_dist:
                             min_left_dist = abs(dx)
@@ -240,7 +240,6 @@ class Level3:
                 if self.boss.hp <= 0:
                     del self.boss
             else:
-                # Боковое столкновение
                 if not getattr(self, 'temporary_invincible', False):
                     self.game_over = True
                     self.game_over_message = "Уровень не пройден"
@@ -284,11 +283,9 @@ class Level3:
                 self.transition_alpha = 0
                 self.game_over_message = "Уровень пройден!"
 
-                # Устанавливаем текущий уровень
                 level_completed_scene = SceneManager.get_instance().scenes['level_completed']
                 level_completed_scene.set_current_level('level3')  # <--- ВАЖНО!
 
-                # Переход на сцену завершения
                 SceneManager.get_instance().set('level_completed')
 
     def _transition_to_scene(self, scene_name):

@@ -17,6 +17,8 @@ class Player(pygame.sprite.Sprite):
         self.facing_right = True
         self.animation_frame = 0
         self.animation_speed = 0.15
+        self.death_animation_speed = 0.5
+        self.death_animation_complete = False
 
         self.speed = 5
         self.jump_power = -15
@@ -27,6 +29,7 @@ class Player(pygame.sprite.Sprite):
         self.is_alive = True
         self.is_dying = False
         self.death_animation_complete = False
+
 
     def _load_all_animations(self):
         animations = {
@@ -78,12 +81,10 @@ class Player(pygame.sprite.Sprite):
             self._update_animation()
             return
 
-        # Гравитация
         self.velocity_y += GRAVITY
         if self.velocity_y > MAX_FALL_SPEED:
             self.velocity_y = MAX_FALL_SPEED
 
-        # Движение
         self._handle_movement()
         self._update_position()
         self._handle_collisions(platforms)
@@ -114,12 +115,12 @@ class Player(pygame.sprite.Sprite):
         self.on_ground = False
         for platform in platforms:
             if self.collision_rect.colliderect(platform.rect):
-                if self.velocity_y > 0:  # Падение
+                if self.velocity_y > 0:
                     self.rect.bottom = platform.rect.top + self.ground_offset
                     self.collision_rect.bottom = platform.rect.top
                     self.on_ground = True
                     self.velocity_y = 0
-                elif self.velocity_y < 0:  # Прыжок
+                elif self.velocity_y < 0:
                     self.rect.top = platform.rect.bottom + self.ground_offset
                     self.collision_rect.top = platform.rect.bottom
                     self.velocity_y = 0
@@ -128,10 +129,11 @@ class Player(pygame.sprite.Sprite):
         if not self.animations[self.state]:
             return
 
-        self.animation_frame += self.animation_speed
+        current_speed = self.death_animation_speed if self.state == 'death' else self.animation_speed
+        self.animation_frame += current_speed
 
         if self.state == 'death':
-            if self.animation_frame >= len(self.animations['death']):
+            if self.animation_frame >= len(self.animations['death']) - 0.5:
                 self.animation_frame = len(self.animations['death']) - 1
                 self.death_animation_complete = True
         else:
@@ -139,11 +141,19 @@ class Player(pygame.sprite.Sprite):
                 self.animation_frame = 0
 
         frames = self.animations[self.state]
-        frame_index = int(self.animation_frame) % len(frames)
+        frame_index = min(int(self.animation_frame), len(frames) - 1)
         self.image = frames[frame_index]
 
         if not self.facing_right and self.state != 'death':
             self.image = pygame.transform.flip(self.image, True, False)
+
+    def die(self):
+        self.is_dying = True
+        self.state = 'death'
+        self.animation_frame = 0
+        self.velocity_x = 0
+        self.velocity_y = 0
+        self.death_animation_complete = False
 
     def handle_input(self):
         if not self.is_alive or self.is_dying:
@@ -161,13 +171,6 @@ class Player(pygame.sprite.Sprite):
     def take_damage(self):
         if self.is_alive and not self.is_dying:
             self.die()
-
-    def die(self):
-        self.is_dying = True
-        self.state = 'death'
-        self.animation_frame = 0
-        self.velocity_x = 0
-        self.velocity_y = 0
 
     def is_death_animation_complete(self):
         return self.death_animation_complete
