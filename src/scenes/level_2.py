@@ -7,6 +7,7 @@ from Sprites import Platform, Player, Star
 from Sprites.clouds import Cloud
 from Sprites.monsters import Monster
 
+
 class Level2:
     def __init__(self):
         self.config = {
@@ -28,7 +29,6 @@ class Level2:
             'total_stars': 3
         }
 
-        print('создан уровень 2')
         self._init_base_variables()
         self.reset()
 
@@ -40,7 +40,7 @@ class Level2:
             if monster.is_dead:
                 continue
 
-            if monster.is_alive and self.player.rect.colliderect(monster.rect):
+            if monster.is_alive and self.player.collision_rect.colliderect(monster.rect):
                 if (self.player.velocity_y > 0 and
                         self.player.rect.bottom < monster.rect.centery and
                         self.player.rect.right > monster.rect.left and
@@ -52,25 +52,22 @@ class Level2:
                     self._player_dies()
 
     def _player_dies(self):
-        print("Игрок убит")
-        self.player.is_alive = False
-        self._transition_to_scene('game_over')
+        self.player.die()
+        self.game_over_message = "Уровень не пройден"
 
     def _generate_platforms(self):
         platform_width = 100
         platform_height = 20
         platform_count = (WIDTH // platform_width) + 1
 
-        platforms = []
-
-        platforms.append((0, HEIGHT - platform_height))
+        platforms = [(0, HEIGHT - platform_height)]
 
         for i in range(1, platform_count):
             x = i * platform_width
-            if x + platform_width <= WIDTH:
-                platforms.append((x, HEIGHT - platform_height))
-            else:
-                platforms.append((WIDTH - platform_width, HEIGHT - platform_height))
+            platforms.append(
+                (x if x + platform_width <= WIDTH else WIDTH - platform_width,
+                 HEIGHT - platform_height)
+            )
 
         return platforms
 
@@ -102,7 +99,6 @@ class Level2:
         self._create_platforms()
         self._create_clouds()
         self._create_stars()
-        self.monsters = pygame.sprite.Group()
         self._create_monsters()
         self.game_objects.add(self.player)
 
@@ -137,8 +133,6 @@ class Level2:
     def _create_platforms(self):
         for x, y in self.config['platform_positions']:
             platform = Platform(x, y)
-            platform.rect.x = x
-            platform.rect.y = y
             self.all_platforms.add(platform)
         self._update_visible_platforms()
 
@@ -155,17 +149,11 @@ class Level2:
                 self._attempt_add_cloud(config)
 
     def _create_monsters(self):
-        if not hasattr(self, 'monsters'):
-            self.monsters = pygame.sprite.Group()
-        else:
-            self.monsters.empty()
-
         platforms_sorted = sorted(self.all_platforms.sprites(), key=lambda p: p.rect.x)
         if not platforms_sorted:
             return
 
         platform = platforms_sorted[-1]
-
         positions = [
             (platform.rect.right - 400, platform.rect.top - 50),
             (platform.rect.centerx, platform.rect.top - 50)
@@ -181,9 +169,9 @@ class Level2:
         cloud = Cloud(x, y, config["type"])
 
         if not any(
-            abs(cloud.rect.x - c.rect.x) < cloud.min_distance and
-            abs(cloud.rect.y - c.rect.y) < 100
-            for c in self.clouds
+                abs(cloud.rect.x - c.rect.x) < cloud.min_distance and
+                abs(cloud.rect.y - c.rect.y) < 100
+                for c in self.clouds
         ):
             self.clouds.add(cloud)
 
@@ -193,7 +181,7 @@ class Level2:
 
         for platform in self.all_platforms:
             if (platform.rect.right > camera_x - 100 and
-                platform.rect.left < camera_x + self.base_width + 100):
+                    platform.rect.left < camera_x + self.base_width + 100):
                 self.visible_platforms.add(platform)
 
     def update_layout(self, window_size):
@@ -205,6 +193,7 @@ class Level2:
         self.font = pygame.font.Font(font_path, int(24 * self.scale_factor))
         self.level_font = pygame.font.Font(font_path, int(36 * self.scale_factor))
 
+        # Обновляем кнопку вручную
         self.back_button.rect.x = int((self.base_width - 170) * self.scale_x)
         self.back_button.rect.y = int(20 * self.scale_y)
         self.back_button.rect.width = int(150 * self.scale_factor)
@@ -212,7 +201,11 @@ class Level2:
         self.back_button.font = pygame.font.Font(font_path, int(30 * self.scale_factor))
         self.back_button.scale_factor = self.scale_factor
         self.back_button.border_width = int(3 * self.scale_factor)
-        self.back_button.rendered_text = self.back_button.font.render(self.back_button.text, True, self.back_button.text_color)
+        self.back_button.rendered_text = self.back_button.font.render(
+            self.back_button.text,
+            True,
+            self.back_button.text_color
+        )
 
     def handle_event(self, event):
         if event.type == pygame.VIDEORESIZE:
@@ -236,7 +229,8 @@ class Level2:
         self.back_button.hovered = self.back_button.is_hovered(mouse_pos)
 
     def _check_game_over(self):
-        if self.player.rect.top > HEIGHT and not self.game_over:
+        if (self.player.rect.top > HEIGHT or
+            (self.player.is_dying and self.player.is_death_animation_complete())) and not self.game_over:
             self.game_over = True
 
         if self.game_over and self.game_over_alpha < 255:
@@ -255,9 +249,11 @@ class Level2:
         self._check_star_collisions()
 
     def _check_star_collisions(self):
-        for star in self.stars:
-            if self.player.rect.colliderect(star.rect) and star.collect():
-                self.stars_collected += 1
+        stars_to_remove = [star for star in self.stars
+                           if self.player.collision_rect.colliderect(star.rect) and star.collect()]
+        for star in stars_to_remove:
+            self.stars.remove(star)
+            self.stars_collected += 1
 
     def _check_level_completion(self):
         if self.stars_collected >= self.config['total_stars'] and not self.showing_completion:
@@ -265,9 +261,9 @@ class Level2:
             self.transition_alpha = 0
             self.game_over_message = "Уровень пройден!"
 
-            # Устанавливаем текущий уровень перед переходом
-            level_completed_scene = SceneManager.get_instance().scenes['level_completed']
-            level_completed_scene.set_current_level('level2')
+            level_completed = SceneManager.get_instance().scenes.get('level_completed')
+            if level_completed:
+                level_completed.set_current_level('level2')
 
         if self.showing_completion:
             self.transition_alpha += 5
@@ -276,8 +272,6 @@ class Level2:
 
     def _transition_to_scene(self, scene_name):
         manager = SceneManager.get_instance()
-
-        # Автоматически сохраняем текущий уровень при любом переходе
         manager.last_scene_name = 'level2'
 
         if scene_name == 'game_over':
@@ -285,7 +279,6 @@ class Level2:
             game_over_scene.set_message(self.game_over_message)
 
         manager.set(scene_name)
-
 
     def render(self, screen):
         current_size = screen.get_size()
@@ -313,9 +306,7 @@ class Level2:
         for monster in self.monsters:
             monster.draw(screen, camera_x)
 
-        player_img = (self.player.original_image_right if self.player.facing_right
-                    else self.player.original_image_left)
-        self._render_player(screen, player_img)
+        self.player.draw(screen, camera_x)
 
     def _render_sprite(self, screen, image, rect, camera_x=0):
         x = int((rect.x - camera_x) * self.scale_x)
@@ -323,16 +314,6 @@ class Level2:
         scaled_size = (
             int(rect.width * self.scale_factor),
             int(rect.height * self.scale_factor)
-        )
-        scaled_img = pygame.transform.scale(image, scaled_size)
-        screen.blit(scaled_img, (x, y))
-
-    def _render_player(self, screen, image):
-        x = int((self.base_width // 2 - self.player.rect.width // 2) * self.scale_x)
-        y = int(self.player.rect.y * self.scale_y)
-        scaled_size = (
-            int(self.player.rect.width * self.scale_x),
-            int(self.player.rect.height * self.scale_y)
         )
         scaled_img = pygame.transform.scale(image, scaled_size)
         screen.blit(scaled_img, (x, y))
@@ -360,12 +341,11 @@ class Level2:
             int(self.base_width // 2 * self.scale_x),
             int(30 * self.scale_y))
 
-
         colors = self.config['ui_colors']
         pygame.draw.rect(screen, colors['bg'], bg_rect, border_radius=int(12 * self.scale_factor))
         pygame.draw.rect(screen, colors['border'], bg_rect,
-                        border_radius=int(12 * self.scale_factor),
-                        width=int(2 * self.scale_factor))
+                         border_radius=int(12 * self.scale_factor),
+                         width=int(2 * self.scale_factor))
         screen.blit(level_text, text_rect)
 
     def _render_stars_counter(self, screen):
