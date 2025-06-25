@@ -33,18 +33,27 @@ class Level2:
         self.reset()
 
     def _check_monster_collisions(self):
-        if not getattr(self.player, 'alive', True):
-            return  # если уже мертвый — ничего не делаем
+        if not self.player.is_alive:
+            return
 
-        for monster in getattr(self, 'monsters', []):
-            if self.player.rect.colliderect(monster.rect):
-                self._player_dies()
-                break
+        for monster in self.monsters:
+            if monster.is_dead:
+                continue
+
+            if monster.is_alive and self.player.rect.colliderect(monster.rect):
+                if (self.player.velocity_y > 0 and
+                        self.player.rect.bottom < monster.rect.centery and
+                        self.player.rect.right > monster.rect.left and
+                        self.player.rect.left < monster.rect.right):
+                    monster.die()
+                    self.player.velocity_y = -15
+                    self.player.rect.y -= 10
+                else:
+                    self._player_dies()
 
     def _player_dies(self):
         print("Игрок убит")
         self.player.is_alive = False
-        # перезапуск уровня:
         self._transition_to_scene('game_over')
 
     def _generate_platforms(self):

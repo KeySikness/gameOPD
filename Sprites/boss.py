@@ -129,14 +129,3 @@ class Boss(pygame.sprite.Sprite):
         self.hp -= amount
         if self.hp <= 0:
             self.kill()
-
-
-
-
-
-
-
-
-
-
-

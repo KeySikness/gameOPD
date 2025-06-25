@@ -89,7 +89,6 @@ class Player(pygame.sprite.Sprite):
         else:
             screen.blit(self.original_image_right, (self.rect.x - camera_offset, self.rect.y))
 
-    # ✅ Новый метод
     def take_damage(self):
         if self.is_alive:
             self.health -= 1
@@ -100,4 +99,4 @@ class Player(pygame.sprite.Sprite):
     def die(self):
         self.is_alive = False
         print("Игрок погиб")
-        # Тут можно переключить сцену или перезапустить уровень
+
